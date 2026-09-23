@@ -26,12 +26,24 @@ type CreateRecordRequest struct {
 type UpdatePriceInput struct {
 	Price float64 `json:"price"`
 }
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
 
+func writeJSONError(
+	w http.ResponseWriter,
+	status int,
+	message string,
+) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(ErrorResponse{Error: message})
+}
 func createRecordHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 	var input CreateRecordRequest
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		http.Error(w, "JSON格式错误", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "JSON格式错误")
 		return
 	}
 
@@ -39,16 +51,16 @@ func createRecordHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 	input.Artist = strings.TrimSpace(input.Artist)
 
 	if input.Title == "" || input.Artist == "" || input.Price <= 0 {
-		http.Error(
+		writeJSONError(
 			w,
-			"title、artist 不能为空，price 必须大于 0",
 			http.StatusBadRequest,
+			"title、artist 不能为空，price 必须大于 0",
 		)
 		return
 	}
 	newID, err := addRecord(db, input.Title, input.Artist, input.Price)
 	if err != nil {
-		http.Error(w, "新增唱片失败", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "新增唱片失败")
 		return
 	}
 	createdRecord := Record{
@@ -63,24 +75,6 @@ func createRecordHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 
 }
 
-/*
-var input CreateRecordRequest
-
-err := json.NewDecoder(r.Body).Decode(&input)
-
-	if err!= nil{
-		http.Error(w,"JSON错误",http.StatusBadRequest)
-		return
-	}
-
-input.Title=strings.TrimSpace(input.Title)
-input.Artist=strings.TrimSpace(input.Artist)
-
-	if input.Title =="" || input.Artist=="" || input.Price<=0{
-		http.Error(w,"标题，歌手不能为空，价格不能小于0",http.StatusBadRequest)
-		return
-	}
-*/
 func addRecord(db *sql.DB,
 	title string,
 	artist string,
@@ -132,7 +126,7 @@ func recordsHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		records, err := getAllRecords(db)
 		if err != nil {
-			http.Error(w, "查询唱片失败", http.StatusInternalServerError)
+			writeJSONError(w, http.StatusInternalServerError, "查询唱片失败")
 			return
 		}
 
@@ -144,10 +138,10 @@ func recordsHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 
 	default:
 		w.Header().Set("Allow", "GET, POST")
-		http.Error(
+		writeJSONError(
 			w,
-			"只允许 GET 或 POST 请求",
 			http.StatusMethodNotAllowed,
+			"只允许 GET 或 POST 请求",
 		)
 	}
 }
@@ -155,16 +149,16 @@ func recordByIDHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 	rawID := r.PathValue("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil || id <= 0 {
-		http.Error(w, "invalid record id", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "invalid record id")
 		return
 	}
 	record, err := findRecordByID(db, id)
 	if err == sql.ErrNoRows {
-		http.Error(w, "record not found", http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "record not found")
 		return
 	}
 	if err != nil {
-		http.Error(w, "failed to query record", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to query record")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -184,7 +178,6 @@ func findRecordByID(db *sql.DB, recordID int) (Record, error) {
 	return record, nil
 
 }
-
 
 func deleteRecord(db *sql.DB, recordID int) (int64, error) {
 	result, err := db.Exec(`
@@ -228,16 +221,16 @@ func deleteRecordHandler(
 	rawID := r.PathValue("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil || id <= 0 {
-		http.Error(w, "invalid record id", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "invalid record id")
 		return
 	}
 	affected, err := deleteRecord(db, id)
 	if err != nil {
-		http.Error(w, "数据库错误", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "数据库错误")
 		return
 	}
 	if affected == 0 {
-		http.Error(w, "没找到", http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "没找到")
 		return
 	}
 
@@ -252,26 +245,25 @@ func updateRecordPriceHandler(
 	rawID := r.PathValue("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil || id <= 0 {
-		http.Error(w, "invalid record id", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "invalid record id")
 		return
 	}
 	var input UpdatePriceInput
 	err = json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "invalid JSON")
 		return
 	}
 	if input.Price <= 0 {
-		http.Error(w, "价格必须大于0", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "价格必须大于0")
 		return
 	}
 	affected, err := updateRecordPrice(db, id, input.Price)
 	if err != nil {
-		http.Error(w, "failed to update record", http.StatusInternalServerError)
-		return
+		writeJSONError(w, http.StatusInternalServerError, "failed to update record")
 	}
 	if affected == 0 {
-		http.Error(w, "record not found", http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "record not found")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
