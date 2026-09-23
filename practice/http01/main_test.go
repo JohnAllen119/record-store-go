@@ -1,9 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -63,5 +65,32 @@ func TestRecordsHandlerMethodNotAllowed(t *testing.T) {
 	wantError := "只允许 GET 或 POST 请求"
 	if body.Error != wantError {
 		t.Fatalf("expected error %q, got %q", wantError, body.Error)
+	}
+}
+func TestUpdateRecordPriceHandlerDatabaseError(t *testing.T) {
+	db, err := sql.Open("mysql", "")
+	if err != nil {
+		t.Fatalf("failed to create database handle: %v", err)
+	}
+	err = db.Close()
+	if err != nil {
+		t.Fatalf("failed to close database handle: %v", err)
+	}
+	request := httptest.NewRequest(
+		http.MethodPatch,
+		"/records/1",
+		strings.NewReader(`{"price":99.99}`),
+	)
+	request.SetPathValue("id", "1")
+	recorder := httptest.NewRecorder()
+	updateRecordPriceHandler(db, recorder, request)
+	response := recorder.Result()
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusInternalServerError {
+		t.Fatalf(
+			"expected status %d, got %d",
+			http.StatusInternalServerError,
+			response.StatusCode,
+		)
 	}
 }
