@@ -261,6 +261,7 @@ func updateRecordPriceHandler(
 	affected, err := updateRecordPrice(db, id, input.Price)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to update record")
+		return
 	}
 	if affected == 0 {
 		writeJSONError(w, http.StatusNotFound, "record not found")
