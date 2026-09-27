@@ -270,21 +270,24 @@ func updateRecordPriceHandler(
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(input)
 }
-func registerRoutes(db *sql.DB) {
-	http.HandleFunc("/hello", helloHandler)
-	http.HandleFunc("/records", func(w http.ResponseWriter, r *http.Request) {
+
+func registerRoutes(db *sql.DB) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/hello", helloHandler)
+	mux.HandleFunc("/records", func(w http.ResponseWriter, r *http.Request) {
 		recordsHandler(db, w, r)
 	})
 
-	http.HandleFunc("GET /records/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /records/{id}", func(w http.ResponseWriter, r *http.Request) {
 		recordByIDHandler(db, w, r)
 	})
-	http.HandleFunc("PATCH /records/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("PATCH /records/{id}", func(w http.ResponseWriter, r *http.Request) {
 		updateRecordPriceHandler(db, w, r)
 	})
-	http.HandleFunc("DELETE /records/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("DELETE /records/{id}", func(w http.ResponseWriter, r *http.Request) {
 		deleteRecordHandler(db, w, r)
 	})
+	return mux
 }
 func main() {
 	dsn := os.Getenv("RECORD_STORE_DSN")
@@ -304,11 +307,11 @@ func main() {
 		return
 	}
 	fmt.Println("连接 MySQL 成功")
-	registerRoutes(db)
+	mux := registerRoutes(db)
 
 	fmt.Println("服务器启动：http://127.0.0.1:8080")
 
-	err = http.ListenAndServe(":8080", nil)
+	err = http.ListenAndServe(":8080", mux)
 	if err != nil {
 		fmt.Println("服务器启动失败：", err)
 	}

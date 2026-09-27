@@ -133,3 +133,22 @@ func TestRecordByIDHandlerInvalidID(t *testing.T) {
 	}
 
 }
+
+func TestRegisterRoutesInvalidRecordID(t *testing.T) {
+	mux := registerRoutes(nil)
+	request := httptest.NewRequest(http.MethodGet, "/records/abc", nil)
+	recorder := httptest.NewRecorder()
+	mux.ServeHTTP(recorder, request)
+	response := recorder.Result()
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d", http.StatusBadRequest, response.StatusCode)
+	}
+	var body ErrorResponse
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatalf("failed to decode response body: %v", err)
+	}
+	if body.Error != "invalid record id" {
+		t.Fatalf("expected error %q, got %q", "invalid record id", body.Error)
+	}
+}
