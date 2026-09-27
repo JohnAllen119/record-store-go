@@ -60,6 +60,14 @@ int Peek(LinkQueue *q, int *out)
     *out = q->front->data;
     return 1;
 }
+void ClearQueue(LinkQueue *q){
+    while(!isEmpty(q)){
+        Node* tmp=q->front;
+        q->front=q->front->next;
+        free(tmp);
+    }
+    q->rear=NULL;
+}
 int main()
 {
     LinkQueue q;
@@ -80,5 +88,15 @@ int main()
     peekResult = Peek(&q, &value);
     printf("empty peek return:%d\n", peekResult);
 
+    LinkQueue m;
+    initQueue(&m);
+    Push(&m,10);
+    Push(&m,20);
+    Push(&m,30);
+    ClearQueue(&m);
+    printf("isEmpty:%d\n",isEmpty(&m));
+    Push(&m,40);
+    Pop(&m,&value);
+    printf("value after clear:%d\n", value);
     return 0;
 }
