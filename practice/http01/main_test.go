@@ -114,3 +114,22 @@ func TestUpdateRecordPriceHandlerInvalidID(t *testing.T) {
 		t.Fatalf("expected error %q, got %q", "invalid record id", body.Error)
 	}
 }
+func TestRecordByIDHandlerInvalidID(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/records/abc", nil)
+	request.SetPathValue("id", "abc")
+	recorder := httptest.NewRecorder()
+	recordByIDHandler(nil, recorder, request)
+	response := recorder.Result()
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected status %d,get %d", http.StatusBadRequest, response.StatusCode)
+	}
+	var body ErrorResponse
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatalf("failed to decode response body: %v", err)
+	}
+	if body.Error != "invalid record id" {
+		t.Fatalf("expected error %q, got %q", "invalid record id", body.Error)
+	}
+
+}

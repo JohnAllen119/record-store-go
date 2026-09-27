@@ -270,6 +270,22 @@ func updateRecordPriceHandler(
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(input)
 }
+func registerRoutes(db *sql.DB) {
+	http.HandleFunc("/hello", helloHandler)
+	http.HandleFunc("/records", func(w http.ResponseWriter, r *http.Request) {
+		recordsHandler(db, w, r)
+	})
+
+	http.HandleFunc("GET /records/{id}", func(w http.ResponseWriter, r *http.Request) {
+		recordByIDHandler(db, w, r)
+	})
+	http.HandleFunc("PATCH /records/{id}", func(w http.ResponseWriter, r *http.Request) {
+		updateRecordPriceHandler(db, w, r)
+	})
+	http.HandleFunc("DELETE /records/{id}", func(w http.ResponseWriter, r *http.Request) {
+		deleteRecordHandler(db, w, r)
+	})
+}
 func main() {
 	dsn := os.Getenv("RECORD_STORE_DSN")
 	if dsn == "" {
@@ -288,20 +304,8 @@ func main() {
 		return
 	}
 	fmt.Println("连接 MySQL 成功")
-	http.HandleFunc("/hello", helloHandler)
-	http.HandleFunc("/records", func(w http.ResponseWriter, r *http.Request) {
-		recordsHandler(db, w, r)
-	})
+	registerRoutes(db)
 
-	http.HandleFunc("GET /records/{id}", func(w http.ResponseWriter, r *http.Request) {
-		recordByIDHandler(db, w, r)
-	})
-	http.HandleFunc("PATCH /records/{id}", func(w http.ResponseWriter, r *http.Request) {
-		updateRecordPriceHandler(db, w, r)
-	})
-	http.HandleFunc("DELETE /records/{id}", func(w http.ResponseWriter, r *http.Request) {
-		deleteRecordHandler(db, w, r)
-	})
 	fmt.Println("服务器启动：http://127.0.0.1:8080")
 
 	err = http.ListenAndServe(":8080", nil)
