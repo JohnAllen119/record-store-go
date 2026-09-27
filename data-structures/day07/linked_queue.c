@@ -22,10 +22,11 @@ int isEmpty(const LinkQueue *q)
 void Push(LinkQueue *q, int data)
 {
     Node *newNode = malloc(sizeof(*newNode));
-    if (newNode == NULL) {
-    fprintf(stderr, "memory allocation failed\n");
-    exit(EXIT_FAILURE);
-}
+    if (newNode == NULL)
+    {
+        fprintf(stderr, "memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
     newNode->next = NULL;
     newNode->data = data;
     if (q->rear == NULL)
@@ -52,6 +53,13 @@ int Pop(LinkQueue *q, int *out)
     }
     return 1;
 }
+int Peek(LinkQueue *q, int *out)
+{
+    if (isEmpty(q))
+        return 0;
+    *out = q->front->data;
+    return 1;
+}
 int main()
 {
     LinkQueue q;
@@ -59,6 +67,8 @@ int main()
     Push(&q, 10);
     Push(&q, 20);
     int value;
+    int peekResult = Peek(&q, &value);
+    printf("peek value:%d, return:%d\n", value, peekResult);
     Pop(&q, &value);
     printf("value:%d\n", value);
     Pop(&q, &value);
@@ -67,5 +77,8 @@ int main()
     Pop(&q, &value);
     printf("value:%d\n", value);
     printf("%d\n", isEmpty(&q));
+    peekResult = Peek(&q, &value);
+    printf("empty peek return:%d\n", peekResult);
+
     return 0;
 }
