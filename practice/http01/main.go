@@ -81,7 +81,14 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 func recordsHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		records, err := getAllRecords(db)
+		artist := strings.TrimSpace(r.URL.Query().Get("artist"))
+		var records []Record
+		var err error
+		if artist == "" {
+			records, err = getAllRecords(db)
+		} else {
+			records, err = getRecordsByArtist(db, artist)
+		}
 		if err != nil {
 			writeJSONError(w, http.StatusInternalServerError, "查询唱片失败")
 			return
