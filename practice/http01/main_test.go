@@ -152,3 +152,21 @@ func TestRegisterRoutesInvalidRecordID(t *testing.T) {
 		t.Fatalf("expected error %q, got %q", "invalid record id", body.Error)
 	}
 }
+func TestRegisterRoutesInvalidArtist(t *testing.T) {
+	mux := registerRoutes(nil)
+	request := httptest.NewRequest(http.MethodGet, "/records?artist=%20%20", nil)
+	recorder := httptest.NewRecorder()
+	mux.ServeHTTP(recorder, request)
+	response := recorder.Result()
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected:%d,get:%d", http.StatusBadRequest, response.StatusCode)
+	}
+	var body ErrorResponse
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatalf("failed to decode response body: %v", err)
+	}
+	if body.Error != "invalid artist" {
+		t.Fatalf("expected error %q, got %q", "invalid artist", body.Error)
+	}
+}

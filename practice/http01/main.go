@@ -81,13 +81,19 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 func recordsHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		artist := strings.TrimSpace(r.URL.Query().Get("artist"))
 		var records []Record
 		var err error
-		if artist == "" {
+		query := r.URL.Query()
+		if !query.Has("artist") {
 			records, err = getAllRecords(db)
 		} else {
+			artist := strings.TrimSpace(query.Get("artist"))
+			if artist == "" {
+				writeJSONError(w, http.StatusBadRequest, "invalid artist")
+				return
+			}
 			records, err = getRecordsByArtist(db, artist)
+
 		}
 		if err != nil {
 			writeJSONError(w, http.StatusInternalServerError, "查询唱片失败")
