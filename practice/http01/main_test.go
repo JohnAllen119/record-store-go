@@ -170,3 +170,21 @@ func TestRegisterRoutesInvalidArtist(t *testing.T) {
 		t.Fatalf("expected error %q, got %q", "invalid artist", body.Error)
 	}
 }
+func TestRegisterRoutesInvalidMin_Price(t *testing.T) {
+	mux := registerRoutes(nil)
+	request := httptest.NewRequest(http.MethodGet, "/records?min_price=abc", nil)
+	recorder := httptest.NewRecorder()
+	mux.ServeHTTP(recorder, request)
+	response := recorder.Result()
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected :%d , got : %d", http.StatusBadRequest, response.StatusCode)
+	}
+	var body ErrorResponse
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if body.Error != "invalid min_price" {
+		t.Fatalf("expected error:%q,got :%q", "invalid min_price", body.Error)
+	}
+}

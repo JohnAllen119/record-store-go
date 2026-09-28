@@ -84,15 +84,34 @@ func recordsHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 		var records []Record
 		var err error
 		query := r.URL.Query()
-		if !query.Has("artist") {
+		var price int
+		if !query.Has("artist") && !query.Has("min_price") {
 			records, err = getAllRecords(db)
-		} else {
+		}
+		if query.Has("min_price") {
+			rawPrice := query.Get("min_price")
+			var parseErr error
+			price, parseErr = strconv.Atoi(rawPrice)
+			if parseErr != nil || price <= 0 {
+				writeJSONError(w, http.StatusBadRequest, "invalid min_price")
+				return
+			}
+			if !query.Has("artist") {
+				records, err = getRecordsByMinPrice(db, price)
+			}
+
+		}
+		if query.Has("artist") {
 			artist := strings.TrimSpace(query.Get("artist"))
 			if artist == "" {
 				writeJSONError(w, http.StatusBadRequest, "invalid artist")
 				return
 			}
-			records, err = getRecordsByArtist(db, artist)
+			if query.Has("min_price") {
+				records, err = getRecordsByArtistAndMinPrice(db, artist, price)
+			} else {
+				records, err = getRecordsByArtist(db, artist)
+			}
 
 		}
 		if err != nil {

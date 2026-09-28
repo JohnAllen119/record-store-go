@@ -119,3 +119,56 @@ func getRecordsByArtist(db *sql.DB, artist string) ([]Record, error) {
 	}
 	return records, nil
 }
+func getRecordsByMinPrice(db *sql.DB, minPrice int) ([]Record, error) {
+	records := make([]Record, 0)
+	rows, err := db.Query(`
+	SELECT record_id,title,artist,price
+	FROM records
+	WHERE price >=?
+	ORDER BY record_id
+	`, minPrice)
+	if err != nil {
+		return []Record{}, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var record Record
+		err := rows.Scan(&record.ID, &record.Title, &record.Artist, &record.Price)
+		if err != nil {
+			return []Record{}, err
+		}
+		records = append(records, record)
+	}
+	if err = rows.Err(); err != nil {
+		return []Record{}, err
+	}
+	return records, nil
+}
+
+func getRecordsByArtistAndMinPrice(
+	db *sql.DB, artist string, minPrice int,
+) ([]Record, error) {
+	records := make([]Record, 0)
+	rows, err := db.Query(`
+	SELECT record_id,title,artist,price
+	FROM records
+	WHERE artist = ? AND price >= ?
+	ORDER BY record_id
+	`, artist, minPrice)
+	if err != nil {
+		return []Record{}, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var record Record
+		err = rows.Scan(&record.ID, &record.Title, &record.Artist, &record.Price)
+		if err != nil {
+			return []Record{}, err
+		}
+		records = append(records, record)
+	}
+	if err = rows.Err(); err != nil {
+		return []Record{}, err
+	}
+	return records, nil
+}
