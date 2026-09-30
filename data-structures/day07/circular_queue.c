@@ -36,6 +36,12 @@ int Pop(CircularQueue *q, int *out)
     q->front = (q->front + 1) % CAPACITY;
     return 1;
 }
+int QueueSize(CircularQueue *q){
+    if(q->rear>=q->front){
+        return q->rear-q->front;
+    }
+    return q->rear + CAPACITY - q->front;
+}
 int main(void)
 {
     CircularQueue q;
@@ -49,6 +55,7 @@ int main(void)
     Pop(&q, &out);
     Push(&q, 50);
     Push(&q, 60);
+    printf("full size: %d\n", QueueSize(&q));
     printf("%d\n",Push(&q, 70));
     Pop(&q, &out);
     printf("%d\n",out);
@@ -59,5 +66,9 @@ int main(void)
     Pop(&q, &out);
     printf("%d\n",out);
     printf("%d\n",Pop(&q,&out));
+    Push(&q,60);
+    printf("%d\n",QueueSize(&q));
+    Pop(&q,&out);
+    printf("%d\n",QueueSize(&q));
     return 0;
 }
