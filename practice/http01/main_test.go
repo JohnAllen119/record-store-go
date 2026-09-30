@@ -94,6 +94,7 @@ func TestUpdateRecordPriceHandlerDatabaseError(t *testing.T) {
 		)
 	}
 }
+
 func TestUpdateRecordPriceHandlerInvalidID(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPatch, "/records/abc", nil)
 	request.SetPathValue("id", "abc")
@@ -172,19 +173,27 @@ func TestRegisterRoutesInvalidArtist(t *testing.T) {
 }
 func TestRegisterRoutesInvalidMin_Price(t *testing.T) {
 	mux := registerRoutes(nil)
-	request := httptest.NewRequest(http.MethodGet, "/records?min_price=abc", nil)
-	recorder := httptest.NewRecorder()
-	mux.ServeHTTP(recorder, request)
-	response := recorder.Result()
-	defer response.Body.Close()
-	if response.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected :%d , got : %d", http.StatusBadRequest, response.StatusCode)
-	}
-	var body ErrorResponse
-	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-	if body.Error != "invalid min_price" {
-		t.Fatalf("expected error:%q,got :%q", "invalid min_price", body.Error)
+
+	for _, raw := range []string{"abc", "NaN", "Inf"} {
+		request := httptest.NewRequest(
+			http.MethodGet, "/records?min_price="+raw, nil,
+		)
+		recorder := httptest.NewRecorder()
+		mux.ServeHTTP(recorder, request)
+
+		response := recorder.Result()
+		defer response.Body.Close()
+
+		if response.StatusCode != http.StatusBadRequest {
+			t.Fatalf("min_price=%q: expected 400, got %d", raw, response.StatusCode)
+		}
+
+		var body ErrorResponse
+		if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+			t.Fatalf("min_price=%q: decode response: %v", raw, err)
+		}
+		if body.Error != "invalid min_price" {
+			t.Fatalf("min_price=%q: expected invalid min_price, got %q", raw, body.Error)
+		}
 	}
 }
