@@ -108,7 +108,7 @@ func getRecordsByArtist(db *sql.DB, artist string) ([]Record, error) {
 	}
 	return scanRecords(rows)
 }
-func getRecordsByMinPrice(db *sql.DB, minPrice int) ([]Record, error) {
+func getRecordsByMinPrice(db *sql.DB, minPrice float64) ([]Record, error) {
 
 	rows, err := db.Query(`
 	SELECT record_id,title,artist,price
@@ -123,7 +123,7 @@ func getRecordsByMinPrice(db *sql.DB, minPrice int) ([]Record, error) {
 }
 
 func getRecordsByArtistAndMinPrice(
-	db *sql.DB, artist string, minPrice int,
+	db *sql.DB, artist string, minPrice float64,
 ) ([]Record, error) {
 	rows, err := db.Query(`
 	SELECT record_id,title,artist,price

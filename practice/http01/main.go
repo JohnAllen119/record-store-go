@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -84,15 +85,15 @@ func recordsHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 		var records []Record
 		var err error
 		query := r.URL.Query()
-		var price int
+		var price float64
 		if !query.Has("artist") && !query.Has("min_price") {
 			records, err = getAllRecords(db)
 		}
 		if query.Has("min_price") {
 			rawPrice := query.Get("min_price")
 			var parseErr error
-			price, parseErr = strconv.Atoi(rawPrice)
-			if parseErr != nil || price <= 0 {
+			price, parseErr = strconv.ParseFloat(rawPrice, 64)
+			if parseErr != nil || price <= 0 || math.IsNaN(price) || math.IsInf(price, 0) {
 				writeJSONError(w, http.StatusBadRequest, "invalid min_price")
 				return
 			}
