@@ -5,10 +5,26 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
 
+func openTestDB(t *testing.T) *sql.DB {
+	dsn := os.Getenv("RECORD_STORE_DSN")
+	if dsn == "" {
+		t.Fatal("RECORD_STORE_DSN is not set")
+	}
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		t.Fatalf("failed to open database: %v", err)
+	}
+	if err := db.Ping(); err != nil {
+		db.Close()
+		t.Fatalf("failed to connect database: %v", err)
+	}
+	return db
+}
 func TestWriteJSONError(t *testing.T) {
 	//创建recorder
 	recorder := httptest.NewRecorder()
@@ -195,5 +211,95 @@ func TestRegisterRoutesInvalidMin_Price(t *testing.T) {
 		if body.Error != "invalid min_price" {
 			t.Fatalf("min_price=%q: expected invalid min_price, got %q", raw, body.Error)
 		}
+	}
+}
+
+func TestRegisterRoutesQueryRecordsSuccess(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	newID, err := addRecord(
+		db,
+		"HTTP Test Album",
+		"HTTP Test Artist",
+		123.45,
+	)
+	if err != nil {
+		t.Fatalf("failed to add test record: %v", err)
+	}
+	defer func() {
+		if _, err := deleteRecord(db, int(newID)); err != nil {
+			t.Errorf("failed to delete test record: %v", err)
+		}
+	}()
+	mux := registerRoutes(db)
+	request := httptest.NewRequest(
+		http.MethodGet,
+		"/records?artist=HTTP%20Test%20Artist",
+		nil,
+	)
+	recorder := httptest.NewRecorder()
+	mux.ServeHTTP(recorder, request)
+	response := recorder.Result()
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf(
+			"expected status %d, got %d",
+			http.StatusOK,
+			response.StatusCode,
+		)
+	}
+	var records []Record
+	if err := json.NewDecoder(response.Body).Decode(&records); err != nil {
+		t.Fatalf("failed to decode response body: %v", err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("expected 1 record, got %d", len(records))
+	}
+	record := records[0]
+
+	if record.ID != int(newID) {
+		t.Fatalf("expected record id %d, got %d", newID, record.ID)
+	}
+
+	if record.Title != "HTTP Test Album" {
+		t.Fatalf("expected title %q, got %q", "HTTP Test Album", record.Title)
+	}
+
+	if record.Artist != "HTTP Test Artist" {
+		t.Fatalf("expected artist %q, got %q", "HTTP Test Artist", record.Artist)
+	}
+
+	if record.Price != 123.45 {
+		t.Fatalf("expected price %.2f, got %.2f", 123.45, record.Price)
+	}
+
+}
+
+func TestRegisterRoutesQueryRecordsEmpty(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	mux := registerRoutes(db)
+	request := httptest.NewRequest(
+		http.MethodGet,
+		"/records?artist=__HTTP_TEST_NON_EXISTENT_ARTIST__",
+		nil,
+	)
+	recorder := httptest.NewRecorder()
+	mux.ServeHTTP(recorder, request)
+	response := recorder.Result()
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf(
+			"expected status %d, got %d",
+			http.StatusOK,
+			response.StatusCode,
+		)
+	}
+	var records []Record
+	if err := json.NewDecoder(response.Body).Decode(&records); err != nil {
+		t.Fatalf("failed to decode response body: %v", err)
+	}
+	if len(records) != 0 {
+		t.Fatalf("expect %d,got %d", 0, len(records))
 	}
 }
