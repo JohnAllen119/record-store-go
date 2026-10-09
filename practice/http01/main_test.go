@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -302,4 +304,17 @@ func TestRegisterRoutesQueryRecordsEmpty(t *testing.T) {
 	if len(records) != 0 {
 		t.Fatalf("expect %d,got %d", 0, len(records))
 	}
+}
+
+func TestFindRecordByIDCanceledContext(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := findRecordByID(ctx, db, 1)
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected: %v, got: %v", context.Canceled, err)
+	}
+
 }

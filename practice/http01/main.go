@@ -142,7 +142,7 @@ func recordByIDHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "invalid record id")
 		return
 	}
-	record, err := findRecordByID(db, id)
+	record, err := findRecordByID(r.Context(), db, id)
 	if err == sql.ErrNoRows {
 		writeJSONError(w, http.StatusNotFound, "record not found")
 		return

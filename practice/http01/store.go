@@ -1,6 +1,9 @@
 package main
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+)
 
 func deleteRecord(db *sql.DB, recordID int) (int64, error) {
 	result, err := db.Exec(`
@@ -37,9 +40,9 @@ func updateRecordPrice(
 	return affected, nil
 }
 
-func findRecordByID(db *sql.DB, recordID int) (Record, error) {
+func findRecordByID(ctx context.Context, db *sql.DB, recordID int) (Record, error) {
 	var record Record
-	err := db.QueryRow(`
+	err := db.QueryRowContext(ctx, `
 	SELECT record_id,title,artist,price
 	FROM records
 	WHERE record_id = ?;
