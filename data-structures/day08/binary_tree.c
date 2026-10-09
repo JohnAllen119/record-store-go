@@ -55,6 +55,14 @@ void postorder(Node *root)
     printf("%d\n", root->data);
 }
 
+int treeHeight(Node *root){
+    int height=0;
+    if(root==NULL) return 0;
+    int leftHeight=treeHeight(root->left);
+    int rightHeight=treeHeight(root->right);
+    height= leftHeight > rightHeight ? leftHeight :rightHeight ;
+    return height+1;
+}
 void levelOrder(Node *root) {
     if (root == NULL) return;
 
@@ -70,14 +78,28 @@ void levelOrder(Node *root) {
         front+=1;
         printf("%d\n",current->data);
         if(current->left){
+            if(rear>=100){
+                fprintf(stderr, "BFS queue overflow\n");
+                exit(EXIT_FAILURE);
+            }
             queue[rear]=current->left;
             rear++;
         }
         if(current->right){
+            if(rear>=100){
+                fprintf(stderr, "BFS queue overflow\n");
+                exit(EXIT_FAILURE);
+            }
             queue[rear]=current->right;
             rear++;
         }
     }
+}
+int countNodes(Node *root){
+    if(root==NULL) return 0;
+    int leftCount=countNodes(root->left);
+    int rightCount=countNodes(root->right);
+    return leftCount+rightCount+1;
 }
 int main(void)
 {
@@ -89,6 +111,8 @@ int main(void)
     root->left->left = createNode(40);
     root->left->right = createNode(50);
     levelOrder(root);
+    printf("Tree height: %d\n", treeHeight(root));
+    printf("Node count: %d\n", countNodes(root));
     freeTree(root);
 
     return 0;

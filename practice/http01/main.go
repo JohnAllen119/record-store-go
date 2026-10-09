@@ -1,16 +1,18 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"math"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
-
-	_ "github.com/go-sql-driver/mysql"
+	"time"
 )
 
 type Record struct {
@@ -142,9 +144,18 @@ func recordByIDHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "invalid record id")
 		return
 	}
-	record, err := findRecordByID(r.Context(), db, id)
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+	record, err := findRecordByID(ctx, db, id)
 	if err == sql.ErrNoRows {
 		writeJSONError(w, http.StatusNotFound, "record not found")
+		return
+	}
+	if errors.Is(err, context.Canceled) {
+		return
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		writeJSONError(w, http.StatusServiceUnavailable, "failed to query record")
 		return
 	}
 	if err != nil {

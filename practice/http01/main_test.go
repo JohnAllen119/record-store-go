@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func openTestDB(t *testing.T) *sql.DB {
@@ -317,4 +318,38 @@ func TestFindRecordByIDCanceledContext(t *testing.T) {
 		t.Fatalf("expected: %v, got: %v", context.Canceled, err)
 	}
 
+}
+
+func TestRecordByIDHandlerDeadlineExceeded(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	mux := registerRoutes(db)
+	ctx, cancel := context.WithTimeout(context.Background(), 0*time.Second)
+	defer cancel()
+	request := httptest.NewRequest(http.MethodGet, "/records/10", nil)
+	request = request.WithContext(ctx)
+	recorder := httptest.NewRecorder()
+	mux.ServeHTTP(recorder, request)
+	response := recorder.Result()
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("expected: %v, got: %v", http.StatusServiceUnavailable, response.StatusCode)
+	}
+}
+
+func TestRecordByIDHandlerCanceledContext(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	mux := registerRoutes(db)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	request := httptest.NewRequest(http.MethodGet, "/records/10", nil)
+	request = request.WithContext(ctx)
+	recorder := httptest.NewRecorder()
+	mux.ServeHTTP(recorder, request)
+	response := recorder.Result()
+	defer response.Body.Close()
+	if recorder.Body.Len() != 0 {
+		t.Fatalf("expected len=0")
+	}
 }
