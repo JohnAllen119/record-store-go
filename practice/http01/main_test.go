@@ -353,3 +353,23 @@ func TestRecordByIDHandlerCanceledContext(t *testing.T) {
 		t.Fatalf("expected len=0")
 	}
 }
+
+func TestQueryRowContextTimeoutDuringQuery(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	var result int
+	start := time.Now()
+	err := db.QueryRowContext(ctx, `
+	SELECT SLEEP(5)
+	`).Scan(&result)
+	elapsed := time.Since(start)
+	if !errors.Is(err, context.DeadlineExceeded) {
+
+		t.Fatalf("expected deadline exceeded, got %v", err)
+
+	}
+
+	t.Logf("query elapsed: %v", elapsed)
+}
