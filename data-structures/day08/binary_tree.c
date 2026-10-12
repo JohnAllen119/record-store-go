@@ -55,61 +55,85 @@ void postorder(Node *root)
     printf("%d\n", root->data);
 }
 
-int treeHeight(Node *root){
-    int height=0;
-    if(root==NULL) return 0;
-    int leftHeight=treeHeight(root->left);
-    int rightHeight=treeHeight(root->right);
-    height= leftHeight > rightHeight ? leftHeight :rightHeight ;
-    return height+1;
+int treeHeight(Node *root)
+{
+    if (root == NULL)
+        return 0;
+    int leftHeight = 0;
+    int rightHeight = 0;
+    leftHeight = treeHeight(root->left);
+    rightHeight = treeHeight(root->right);
+    if (rightHeight > leftHeight)
+    {
+        return rightHeight + 1;
+    }
+    return leftHeight + 1;
 }
-void levelOrder(Node *root) {
-    if (root == NULL) return;
+void levelOrder(Node *root)
+{
+    if (root == NULL)
+        return;
 
-    Node *queue[100];
+    Node *queue[256];
     int front = 0;
     int rear = 0;
 
     queue[rear] = root;
-    rear++;
-    
-    while(front<rear){
-        Node* current=queue[front];
-        front+=1;
-        printf("%d\n",current->data);
-        if(current->left){
-            if(rear>=100){
+    rear = (rear + 1) % 256;
+
+    while (front != rear)
+    {
+        Node *current = queue[front];
+        front = (front + 1) % 256;
+        printf("%d\n", current->data);
+        if (current->left)
+        {
+            if ((rear + 1) % 256 == front)
+            {
                 fprintf(stderr, "BFS queue overflow\n");
                 exit(EXIT_FAILURE);
             }
-            queue[rear]=current->left;
-            rear++;
+            queue[rear] = current->left;
+            rear = (rear + 1) % 256;
         }
-        if(current->right){
-            if(rear>=100){
+        if (current->right)
+        {
+            if ((rear + 1) % 256 == front)
+            {
                 fprintf(stderr, "BFS queue overflow\n");
                 exit(EXIT_FAILURE);
             }
-            queue[rear]=current->right;
-            rear++;
+            queue[rear] = current->right;
+            rear = (rear + 1) % 256;
         }
     }
 }
-int countNodes(Node *root){
-    if(root==NULL) return 0;
-    int leftCount=countNodes(root->left);
-    int rightCount=countNodes(root->right);
-    return leftCount+rightCount+1;
+int countNodes(Node *root)
+{
+    if (root == NULL)
+        return 0;
+    int leftCount = countNodes(root->left);
+    int rightCount = countNodes(root->right);
+    return leftCount + rightCount + 1;
 }
 int main(void)
 {
-    Node *root = createNode(10);
-    Node *lroot = createNode(20);
-    Node *rroot = createNode(30);
-    root->left = lroot;
-    root->right = rroot;
-    root->left->left = createNode(40);
-    root->left->right = createNode(50);
+    Node *root = createNode(0);
+    if (root == NULL)
+        return 0;
+    Node *nodes[255];
+    nodes[0] = root;
+
+    for (int i = 1; i < 255; i++)
+    {
+        nodes[i] = createNode(i);
+    }
+    for (int i = 0; i < 127; i++)
+    {
+        nodes[i]->left = nodes[2 * i + 1];
+        nodes[i]->right = nodes[2 * i + 2];
+    }
+
     levelOrder(root);
     printf("Tree height: %d\n", treeHeight(root));
     printf("Node count: %d\n", countNodes(root));
