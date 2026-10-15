@@ -71,42 +71,77 @@ int treeHeight(Node *root)
 }
 void levelOrder(Node *root)
 {
+    int capacity = 8;
     if (root == NULL)
         return;
 
-    Node *queue[256];
+    Node **queue = malloc(capacity * sizeof(Node *));
+    if (queue == NULL)
+    {
+        fprintf(stderr, "queue allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
     int front = 0;
     int rear = 0;
 
     queue[rear] = root;
-    rear = (rear + 1) % 256;
+    rear = (rear + 1) % capacity;
 
     while (front != rear)
     {
         Node *current = queue[front];
-        front = (front + 1) % 256;
+        front = (front + 1) % capacity;
         printf("%d\n", current->data);
         if (current->left)
         {
-            if ((rear + 1) % 256 == front)
+            if ((rear + 1) % capacity == front)
             {
-                fprintf(stderr, "BFS queue overflow\n");
-                exit(EXIT_FAILURE);
+                int newcapacity = capacity * 2;
+                int oldCount = capacity - 1;
+                Node **newQueue = malloc(newcapacity * sizeof(Node *));
+                if (newQueue == NULL)
+                {
+                    fprintf(stderr, "allocation failed\n");
+                    exit(EXIT_FAILURE);
+                }
+                for(int i=0; i<oldCount;i++){
+                    newQueue[i]=queue[(front+i)%capacity];
+                }
+                free(queue);
+                queue=newQueue;
+                front=0;
+                rear=oldCount;
+                capacity=newcapacity;
             }
             queue[rear] = current->left;
-            rear = (rear + 1) % 256;
+            rear = (rear + 1) % capacity;
         }
         if (current->right)
         {
-            if ((rear + 1) % 256 == front)
+            if ((rear + 1) % capacity == front)
             {
-                fprintf(stderr, "BFS queue overflow\n");
-                exit(EXIT_FAILURE);
+                int newcapacity = capacity * 2;
+                int oldCount = capacity - 1;
+                Node **newQueue = malloc(newcapacity * sizeof(Node *));
+                if (newQueue == NULL)
+                {
+                    fprintf(stderr, "allocation failed\n");
+                    exit(EXIT_FAILURE);
+                }
+                for(int i=0; i<oldCount;i++){
+                    newQueue[i]=queue[(front+i)%capacity];
+                }
+                free(queue);
+                queue=newQueue;
+                front=0;
+                rear=oldCount;
+                capacity=newcapacity;
             }
             queue[rear] = current->right;
-            rear = (rear + 1) % 256;
+            rear = (rear + 1) % capacity;
         }
     }
+    free(queue);
 }
 int countNodes(Node *root)
 {

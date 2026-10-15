@@ -39,6 +39,14 @@ func TestRecordByIDInvalidID(t *testing.T) {
 	if response.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expect:StatusBadRequest get:%d", response.StatusCode)
 	}
+	m := make(map[string]string)
+	err := json.NewDecoder(response.Body).Decode(&m)
+	if err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+	if m["error"] != "invalid id" {
+		t.Fatalf("expected:invalid id,get:%v", m["error"])
+	}
 }
 func TestRecordByIDSucceed(t *testing.T) {
 	db := openTestDB(t)
@@ -56,6 +64,9 @@ func TestRecordByIDSucceed(t *testing.T) {
 	err := json.NewDecoder(response.Body).Decode(&record)
 	if err != nil {
 		t.Fatalf("database error: %v", err)
+	}
+	if response.Header.Get("Content-Type") != "application/json" {
+		t.Fatalf("expected:json")
 	}
 	if record.ID != 1 || record.Title != "Abbey Road" || record.Artist != "The Beatles" {
 		t.Fatalf("expect:id=1,title=abbeyroad,artist=the beatles")
@@ -88,7 +99,7 @@ func TestRecordByIDDatabaseError(t *testing.T) {
 	if response.StatusCode != http.StatusInternalServerError {
 		t.Fatalf("expected:statusinternalservererror,get:%d", response.StatusCode)
 	}
-	if response.Header.Get("Content-Type")!="application/json"{
-		t.Fatalf("expect get spplication/json get %v",response.Header.Get("Content-Type"))
+	if response.Header.Get("Content-Type") != "application/json" {
+		t.Fatalf("expect get spplication/json get %v", response.Header.Get("Content-Type"))
 	}
 }

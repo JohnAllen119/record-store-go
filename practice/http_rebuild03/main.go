@@ -14,7 +14,7 @@ type Record struct {
 	Artist string
 }
 type ErrorResponse struct {
-	Error string
+	Error string `json:"error"`
 }
 
 func registerRoutes(db *sql.DB) *http.ServeMux {
@@ -57,7 +57,7 @@ func recordByIDHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusInternalServerError, "connect failed")
 		return
 	}
-	w.Header().Set("Content-Type","application/json")
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&record)
 	return
 }
