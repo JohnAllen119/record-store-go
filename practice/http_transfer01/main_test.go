@@ -110,3 +110,30 @@ func TestGetArtistSuccess(t *testing.T) {
 		t.Fatalf("expect ID %d, got %d", id, artist.ID)
 	}
 }
+
+func TestGetArtistDatabaseError(t *testing.T) {
+	db := OpenTestDB(t)
+	if err := db.Close(); err != nil {
+		t.Fatalf("close database failed: %v", err)
+	}
+	mux := registerRoutes(db)
+	request := httptest.NewRequest(http.MethodGet, "/artists/1", nil)
+	recorder := httptest.NewRecorder()
+	mux.ServeHTTP(recorder, request)
+	response := recorder.Result()
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusInternalServerError {
+		t.Fatalf("expected: %v,got: %v", http.StatusInternalServerError, response.StatusCode)
+	}
+	if response.Header.Get("Content-Type") != "application/json" {
+		t.Fatalf("expected application/json")
+	}
+	var errorResponse ErrorResponse
+	err := json.NewDecoder(response.Body).Decode(&errorResponse)
+	if err != nil {
+		t.Fatalf("decode error response failed: %v", err)
+	}
+	if errorResponse.Error == "" {
+		t.Fatalf("expected non-empty error message")
+	}
+}
